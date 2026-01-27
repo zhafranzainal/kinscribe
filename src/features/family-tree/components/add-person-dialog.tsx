@@ -27,6 +27,7 @@ type AddPersonDialogProps = {
     relationType: AddRelativeType | null;
     relativeToName: string;
     onSubmit: (data: AddPersonFormData) => void;
+    isLoading?: boolean;
 };
 
 export type AddPersonFormData = {
@@ -52,6 +53,7 @@ export function AddPersonDialog({
     relationType,
     relativeToName,
     onSubmit,
+    isLoading = false,
 }: AddPersonDialogProps) {
     const [formData, setFormData] = useState<AddPersonFormData>({
         firstName: '',
@@ -166,10 +168,12 @@ export function AddPersonDialog({
                     </div>
 
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
                             Cancel
                         </Button>
-                        <Button type="submit">Add Person</Button>
+                        <Button type="submit" disabled={isLoading}>
+                            {isLoading ? 'Adding...' : 'Add Person'}
+                        </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>
