@@ -8,8 +8,6 @@ import {
     MiniMap,
     useNodesState,
     useEdgesState,
-    type Node,
-    type Edge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
@@ -17,6 +15,7 @@ import { PersonNode } from './person-node';
 import { AddPersonDialog, type AddPersonFormData } from './add-person-dialog';
 import { PersonDetailPanel } from './person-detail-panel';
 import { useFamilyTreeStore } from '../hooks/use-family-tree-store';
+import { useCreatePerson, useCreateRelationship } from '../hooks/use-family-space';
 import { calculateTreeLayout } from '../utils/tree-layout';
 import { getFullName } from '../utils/tree-helpers';
 import type { AddRelativeType } from '../types';
@@ -25,15 +24,20 @@ const nodeTypes = {
     person: PersonNode,
 };
 
-export function FamilyTree() {
+type FamilyTreeProps = {
+    spaceId: string;
+};
+
+export function FamilyTree({ spaceId }: FamilyTreeProps) {
     const {
         persons,
         relationships,
         selectedPersonId,
         selectPerson,
-        addPerson,
-        addRelationship,
     } = useFamilyTreeStore();
+
+    const { createPerson, isLoading: isCreatingPerson } = useCreatePerson(spaceId);
+    const { createRelationship, isLoading: isCreatingRelationship } = useCreateRelationship(spaceId);
 
     // Dialog state
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -86,96 +90,73 @@ export function FamilyTree() {
         setEdges(layoutEdges);
     }, [layoutNodes, layoutEdges, setNodes, setEdges]);
 
-    // Handle form submit
+    // Handle form submit - now uses real API!
     const handleAddPersonSubmit = useCallback(
-        (formData: AddPersonFormData) => {
-            // Generate temporary ID (in real app, this comes from API)
-            const newPersonId = `temp-${Date.now()}`;
+        async (formData: AddPersonFormData) => {
+            try {
+                // Create person via API
+                const newPerson = await createPerson({
+                    firstName: formData.firstName,
+                    lastName: formData.lastName || null,
+                    gender: formData.gender,
+                    birthDate: formData.birthDate || null,
+                });
 
-            const newPerson = {
-                id: newPersonId,
-                firstName: formData.firstName,
-                lastName: formData.lastName || null,
-                gender: formData.gender,
-                birthDate: formData.birthDate ? new Date(formData.birthDate) : null,
-                deathDate: null,
-                birthPlace: null,
-                profilePhotoUrl: null,
-                bio: null,
-                status: 'UNCLAIMED' as const,
-                inviteEmail: null,
-                invitedAt: null,
-                familySpaceId: 'temp-space', // Will be real in actual app
-                claimedByUserId: null,
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            };
+                // Create relationship if adding relative
+                if (addingRelativeTo && addingRelationType && newPerson) {
+                    const relationshipData = getRelationshipData(
+                        addingRelativeTo,
+                        newPerson.id,
+                        addingRelationType
+                    );
 
-            addPerson(newPerson);
-
-            // Add relationship if adding relative
-            if (addingRelativeTo && addingRelationType) {
-                const relationship = createRelationship(
-                    addingRelativeTo,
-                    newPersonId,
-                    addingRelationType
-                );
-                if (relationship) {
-                    addRelationship(relationship);
+                    if (relationshipData) {
+                        await createRelationship(relationshipData);
+                    }
                 }
-            }
 
-            // Close dialog
-            setDialogOpen(false);
-            setAddingRelativeTo(null);
-            setAddingRelationType(null);
+                // Close dialog
+                setDialogOpen(false);
+                setAddingRelativeTo(null);
+                setAddingRelationType(null);
+            } catch (error) {
+                console.error('Failed to add person:', error);
+                // TODO: Show error toast
+            }
         },
-        [addPerson, addRelationship, addingRelativeTo, addingRelationType]
+        [createPerson, createRelationship, addingRelativeTo, addingRelationType]
     );
 
-    // Helper to create relationship based on type
-    const createRelationship = (
+    // Helper to get relationship data based on type
+    const getRelationshipData = (
         existingPersonId: string,
         newPersonId: string,
         relationType: AddRelativeType
-    ) => {
-        const baseRelationship = {
-            id: `rel-${Date.now()}`,
-            familySpaceId: 'temp-space',
-            marriageDate: null,
-            divorceDate: null,
-            createdAt: new Date(),
-        };
-
+    ): { type: 'PARENT_CHILD' | 'SPOUSE'; person1Id: string; person2Id: string } | null => {
         switch (relationType) {
             case 'father':
             case 'mother':
                 return {
-                    ...baseRelationship,
-                    type: 'PARENT_CHILD' as const,
+                    type: 'PARENT_CHILD',
                     person1Id: newPersonId, // Parent
                     person2Id: existingPersonId, // Child
                 };
             case 'son':
             case 'daughter':
                 return {
-                    ...baseRelationship,
-                    type: 'PARENT_CHILD' as const,
+                    type: 'PARENT_CHILD',
                     person1Id: existingPersonId, // Parent
                     person2Id: newPersonId, // Child
                 };
             case 'spouse':
                 return {
-                    ...baseRelationship,
-                    type: 'SPOUSE' as const,
+                    type: 'SPOUSE',
                     person1Id: existingPersonId,
                     person2Id: newPersonId,
                 };
             case 'brother':
             case 'sister':
-                // For siblings, we need to find a common parent
-                // For now, we'll skip automatic sibling connection
-                // This requires more complex logic
+                // TODO: Handle siblings (need to find/create common parent)
                 return null;
             default:
                 return null;
@@ -220,6 +201,7 @@ export function FamilyTree() {
             {selectedPerson && (
                 <PersonDetailPanel
                     person={selectedPerson}
+                    spaceId={spaceId}
                     onClose={() => selectPerson(null)}
                 />
             )}
@@ -231,6 +213,7 @@ export function FamilyTree() {
                 relationType={addingRelationType}
                 relativeToName={relativeToName}
                 onSubmit={handleAddPersonSubmit}
+                isLoading={isCreatingPerson || isCreatingRelationship}
             />
         </div>
     );
