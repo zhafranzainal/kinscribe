@@ -10,10 +10,11 @@ import { format } from 'date-fns';
 
 type PersonDetailPanelProps = {
     person: Person;
+    spaceId: string;
     onClose: () => void;
 };
 
-export function PersonDetailPanel({ person, onClose }: PersonDetailPanelProps) {
+export function PersonDetailPanel({ person, spaceId, onClose }: PersonDetailPanelProps) {
     const fullName = getFullName(person);
     const age = getAge(person);
     const isDeceased = !!person.deathDate;
