@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { BIOGRAPHY_SECTIONS } from '@/features/biography/constants/section';
+import { BIOGRAPHY_SECTIONS } from '@/features/biography/constants/sections';
 import { Visibility } from '@prisma/client';
 
 type Params = { params: Promise<{ spaceId: string; personId: string }> };
