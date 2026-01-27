@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Person } from '@/types';
 import { getFullName, getAge } from '../utils/tree-helpers';
 import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
 
 type PersonDetailPanelProps = {
     person: Person;
@@ -15,6 +16,9 @@ type PersonDetailPanelProps = {
 };
 
 export function PersonDetailPanel({ person, spaceId, onClose }: PersonDetailPanelProps) {
+
+    const router = useRouter();
+
     const fullName = getFullName(person);
     const age = getAge(person);
     const isDeceased = !!person.deathDate;
