@@ -120,7 +120,11 @@ export function PersonDetailPanel({ person, spaceId, onClose }: PersonDetailPane
 
             {/* Actions */}
             <div className="p-4 border-t space-y-2">
-                <Button className="w-full" variant="default">
+                <Button
+                    className="w-full"
+                    variant="default"
+                    onClick={() => router.push(`/biography/${person.id}?spaceId=${spaceId}`)}
+                >
                     <Users className="h-4 w-4 mr-2" />
                     View Biography
                 </Button>
