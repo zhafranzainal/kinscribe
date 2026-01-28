@@ -3,7 +3,7 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import * as ContextMenu from '@radix-ui/react-context-menu';
-import { User, Plus, Heart, Users } from 'lucide-react';
+import { User, Heart, Users, Trash2, Edit, BookOpen } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -12,7 +12,7 @@ import { getFullName, getAge } from '../utils/tree-helpers';
 import type { PersonNodeData, AddRelativeType } from '../types';
 
 function PersonNodeComponent({ data, selected }: NodeProps<PersonNodeData>) {
-    const { person, onSelect, onAddRelative } = data;
+    const { person, onSelect, onAddRelative, onEdit, onDelete, onViewBiography } = data;
     const fullName = getFullName(person);
     const age = getAge(person);
     const isDeceased = !!person.deathDate;
@@ -117,9 +117,31 @@ function PersonNodeComponent({ data, selected }: NodeProps<PersonNodeData>) {
 
             {/* Right-click context menu */}
             <ContextMenu.Portal>
-                <ContextMenu.Content
-                    className="min-w-[180px] rounded-md border bg-white p-1 shadow-lg"
-                >
+                <ContextMenu.Content className="min-w-[180px] rounded-md border bg-white p-1 shadow-lg z-50">
+                    {/* Quick Actions */}
+                    <ContextMenu.Label className="px-2 py-1.5 text-xs font-semibold text-slate-500">
+                        Actions
+                    </ContextMenu.Label>
+
+                    <ContextMenu.Item
+                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-slate-100 outline-none"
+                        onClick={() => onViewBiography?.(person.id)}
+                    >
+                        <BookOpen className="h-4 w-4 text-slate-500" />
+                        View Biography
+                    </ContextMenu.Item>
+
+                    <ContextMenu.Item
+                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-slate-100 outline-none"
+                        onClick={() => onEdit?.(person.id)}
+                    >
+                        <Edit className="h-4 w-4 text-slate-500" />
+                        Edit Person
+                    </ContextMenu.Item>
+
+                    <ContextMenu.Separator className="my-1 h-px bg-slate-200" />
+
+                    {/* Add Relative */}
                     <ContextMenu.Label className="px-2 py-1.5 text-xs font-semibold text-slate-500">
                         Add Relative
                     </ContextMenu.Label>
@@ -184,6 +206,17 @@ function PersonNodeComponent({ data, selected }: NodeProps<PersonNodeData>) {
                     >
                         <Users className="h-4 w-4 text-pink-500" />
                         Add Sister
+                    </ContextMenu.Item>
+
+                    {/* Danger Zone */}
+                    <ContextMenu.Separator className="my-1 h-px bg-slate-200" />
+
+                    <ContextMenu.Item
+                        className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm text-red-600 hover:bg-red-50 outline-none"
+                        onClick={() => onDelete?.(person.id)}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                        Delete Person
                     </ContextMenu.Item>
                 </ContextMenu.Content>
             </ContextMenu.Portal>

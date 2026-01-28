@@ -14,6 +14,9 @@ type LayoutOptions = {
     relationships: Relationship[];
     onSelect: (personId: string) => void;
     onAddRelative: (personId: string, relationType: string) => void;
+    onEdit?: (personId: string) => void;
+    onDelete?: (personId: string) => void;
+    onViewBiography?: (personId: string) => void;
     selectedPersonId: string | null;
 };
 
@@ -23,6 +26,9 @@ export function calculateTreeLayout({
     relationships,
     onSelect,
     onAddRelative,
+    onEdit,
+    onDelete,
+    onViewBiography,
     selectedPersonId,
 }: LayoutOptions): { nodes: PersonNode[]; edges: RelationshipEdge[] } {
     const nodes: PersonNode[] = [];
@@ -52,6 +58,9 @@ export function calculateTreeLayout({
                 isSelected: person.id === selectedPersonId,
                 onSelect,
                 onAddRelative,
+                onEdit,
+                onDelete,
+                onViewBiography,
             },
         });
     };

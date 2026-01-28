@@ -46,14 +46,19 @@ type PersonDetailPanelProps = {
     person: Person;
     spaceId: string;
     onClose: () => void;
+    initialEditMode?: boolean;
 };
 
-export function PersonDetailPanel({ person, spaceId, onClose }: PersonDetailPanelProps) {
-
+export function PersonDetailPanel({
+    person,
+    spaceId,
+    onClose,
+    initialEditMode = false,
+}: PersonDetailPanelProps) {
     const router = useRouter();
     const { updatePerson, removePerson } = useFamilyTreeStore();
 
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(initialEditMode);
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);

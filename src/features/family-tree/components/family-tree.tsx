@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
     ReactFlow,
     Background,
@@ -14,6 +15,7 @@ import '@xyflow/react/dist/style.css';
 import { PersonNode } from './person-node';
 import { AddPersonDialog, type AddPersonFormData } from './add-person-dialog';
 import { PersonDetailPanel } from './person-detail-panel';
+import { DeletePersonDialog } from './delete-person-dialog';
 import { useFamilyTreeStore } from '../hooks/use-family-tree-store';
 import { useCreatePerson, useCreateRelationship } from '../hooks/use-family-space';
 import { calculateTreeLayout } from '../utils/tree-layout';
@@ -29,6 +31,7 @@ type FamilyTreeProps = {
 };
 
 export function FamilyTree({ spaceId }: FamilyTreeProps) {
+    const router = useRouter();
     const {
         persons,
         relationships,
@@ -39,15 +42,23 @@ export function FamilyTree({ spaceId }: FamilyTreeProps) {
     const { createPerson, isLoading: isCreatingPerson } = useCreatePerson(spaceId);
     const { createRelationship, isLoading: isCreatingRelationship } = useCreateRelationship(spaceId);
 
-    // Dialog state
+    // Dialog states
     const [dialogOpen, setDialogOpen] = useState(false);
     const [addingRelativeTo, setAddingRelativeTo] = useState<string | null>(null);
     const [addingRelationType, setAddingRelationType] = useState<AddRelativeType | null>(null);
+
+    // Delete dialog state
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [personToDelete, setPersonToDelete] = useState<string | null>(null);
+
+    // Edit mode state (opens side panel in edit mode)
+    const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
 
     // Handle node selection
     const handleSelect = useCallback(
         (personId: string) => {
             selectPerson(personId);
+            setEditingPersonId(null); // Reset edit mode when selecting new person
         },
         [selectPerson]
     );
@@ -60,6 +71,29 @@ export function FamilyTree({ spaceId }: FamilyTreeProps) {
             setDialogOpen(true);
         },
         []
+    );
+
+    // Handle edit from context menu
+    const handleEdit = useCallback(
+        (personId: string) => {
+            selectPerson(personId);
+            setEditingPersonId(personId);
+        },
+        [selectPerson]
+    );
+
+    // Handle delete from context menu
+    const handleDelete = useCallback((personId: string) => {
+        setPersonToDelete(personId);
+        setDeleteDialogOpen(true);
+    }, []);
+
+    // Handle view biography from context menu
+    const handleViewBiography = useCallback(
+        (personId: string) => {
+            router.push(`/biography/${personId}?spaceId=${spaceId}`);
+        },
+        [router, spaceId]
     );
 
     // Calculate layout
@@ -77,9 +111,21 @@ export function FamilyTree({ spaceId }: FamilyTreeProps) {
             relationships,
             onSelect: handleSelect,
             onAddRelative: handleAddRelative,
+            onEdit: handleEdit,
+            onDelete: handleDelete,
+            onViewBiography: handleViewBiography,
             selectedPersonId,
         });
-    }, [persons, relationships, selectedPersonId, handleSelect, handleAddRelative]);
+    }, [
+        persons,
+        relationships,
+        selectedPersonId,
+        handleSelect,
+        handleAddRelative,
+        handleEdit,
+        handleDelete,
+        handleViewBiography,
+    ]);
 
     const [nodes, setNodes, onNodesChange] = useNodesState(layoutNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(layoutEdges);
@@ -90,7 +136,7 @@ export function FamilyTree({ spaceId }: FamilyTreeProps) {
         setEdges(layoutEdges);
     }, [layoutNodes, layoutEdges, setNodes, setEdges]);
 
-    // Handle form submit - now uses real API!
+    // Handle form submit
     const handleAddPersonSubmit = useCallback(
         async (formData: AddPersonFormData) => {
             try {
@@ -168,6 +214,7 @@ export function FamilyTree({ spaceId }: FamilyTreeProps) {
         : '';
 
     const selectedPerson = persons.find((p) => p.id === selectedPersonId);
+    const personToDeleteData = persons.find((p) => p.id === personToDelete);
 
     return (
         <div className="flex h-full w-full">
@@ -202,7 +249,11 @@ export function FamilyTree({ spaceId }: FamilyTreeProps) {
                 <PersonDetailPanel
                     person={selectedPerson}
                     spaceId={spaceId}
-                    onClose={() => selectPerson(null)}
+                    onClose={() => {
+                        selectPerson(null);
+                        setEditingPersonId(null);
+                    }}
+                    initialEditMode={editingPersonId === selectedPerson.id}
                 />
             )}
 
@@ -214,6 +265,14 @@ export function FamilyTree({ spaceId }: FamilyTreeProps) {
                 relativeToName={relativeToName}
                 onSubmit={handleAddPersonSubmit}
                 isLoading={isCreatingPerson || isCreatingRelationship}
+            />
+
+            {/* Delete confirmation dialog */}
+            <DeletePersonDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                person={personToDeleteData || null}
+                spaceId={spaceId}
             />
         </div>
     );

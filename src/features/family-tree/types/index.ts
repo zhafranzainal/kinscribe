@@ -13,6 +13,9 @@ export type PersonNodeData = {
     isSelected: boolean;
     onSelect: (personId: string) => void;
     onAddRelative: (personId: string, relationType: AddRelativeType) => void;
+    onEdit?: (personId: string) => void;
+    onDelete?: (personId: string) => void;
+    onViewBiography?: (personId: string) => void;
 };
 
 export type AddRelativeType =
