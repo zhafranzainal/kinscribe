@@ -1,14 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { FamilyTree } from '@/features/family-tree/components';
 import { useFamilySpace } from '@/features/family-tree/hooks/use-family-space';
 import { useFamilyTreeStore } from '@/features/family-tree/hooks/use-family-tree-store';
 import { Button } from '@/components/ui/button';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Heart } from 'lucide-react';
 import { fetchApi } from '@/lib/api';
 
 export default function Home() {
+  const router = useRouter();
+
   const [spaceId, setSpaceId] = useState<string | null>(null);
   const [isCreatingSpace, setIsCreatingSpace] = useState(false);
 
@@ -107,6 +110,16 @@ export default function Home() {
           <span className="text-sm text-slate-500">
             {persons.length} {persons.length === 1 ? 'person' : 'people'}
           </span>
+
+          {spaceId && (
+            <Button
+              variant="outline"
+              onClick={() => router.push(`/weddings?spaceId=${spaceId}`)}
+            >
+              <Heart className="h-4 w-4 mr-2" />
+              Weddings
+            </Button>
+          )}
         </div>
       </header>
 
